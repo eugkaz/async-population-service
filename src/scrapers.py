@@ -14,7 +14,6 @@ class BaseScraper(ABC):
         }
 
 class WikipediaScraper(BaseScraper):
-    # URL з вашого завдання
     URL = "https://en.wikipedia.org/w/index.php?title=List_of_countries_and_dependencies_by_population_(United_Nations)&oldid=1215058959"
 
     async def fetch_data(self) -> list[dict]:
@@ -28,20 +27,17 @@ class WikipediaScraper(BaseScraper):
 
         soup = BeautifulSoup(html, 'lxml')
         
-        # Шукаємо таблицю за класом 'wikitable'
-        # У наданому вами HTML таблиця має класи: wikitable sortable mw-datatable ...
+
         tables = soup.find_all('table', {'class': 'wikitable'})
         
         target_table = None
         for t in tables:
-            # Перевіряємо заголовки, щоб знайти правильну таблицю
             headers = t.get_text().lower()
             if "location" in headers and "2023" in headers:
                 target_table = t
                 break
         
         if not target_table:
-            # Якщо не знайшли за текстом, беремо першу, бо вона зазвичай основна
             if tables:
                 target_table = tables[0]
             else:
@@ -49,38 +45,25 @@ class WikipediaScraper(BaseScraper):
                 return []
 
         data = []
-        # Знаходимо всі рядки в body таблиці
         rows = target_table.find_all('tr')
         
         for row in rows:
             cols = row.find_all('td')
             
-            # Нам потрібно мінімум 5 колонок, щоб дістати регіон (index 4)
             if len(cols) < 5:
                 continue
             
             try:
-                # --- 1. Назва країни (Колонка 0) ---
-                # Часто назва країни загорнута в <a href="...">Country</a>
                 country_name = cols[0].get_text(strip=True)
-                # Видаляємо посилання на примітки [a], [b] тощо
                 country_name = re.sub(r'\[.*?\]', '', country_name)
-                
-                # --- 2. Регіон (Колонка 4 у вашому HTML) ---
                 region = cols[4].get_text(strip=True)
-                
-                # --- 3. Населення 2023 (Колонка 2 у вашому HTML) ---
                 pop_str = cols[2].get_text(strip=True)
-                # Видаляємо коми
                 pop_clean = re.sub(r'[^\d]', '', pop_str)
                 
                 if not pop_clean:
                     continue
                 
                 population = int(pop_clean)
-
-                # --- Фільтрація ---
-                # Ігноруємо рядок "World" та заголовки континентів, якщо вони є
                 if "World" in country_name:
                     continue
 
@@ -90,7 +73,6 @@ class WikipediaScraper(BaseScraper):
                     'population': population
                 })
             except (ValueError, IndexError) as e:
-                # print(f"Skipping row due to error: {e}")
                 continue
                 
         print(f"Parsed {len(data)} countries from Wikipedia.")
