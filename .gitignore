@@ -1,19 +1,14 @@
-# Python
 __pycache__/
 *.py[cod]
 *$py.class
 venv/
 .env
 
-# Docker (якщо виникають локальні файли)
 .docker/
 
-# Database data (якщо ви монтували volume локально)
 postgres_data/
 
-# IDE settings
 .vscode/
 .idea/
 
-# Mac system files
 .DS_Store
